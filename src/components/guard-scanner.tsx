@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { 
   QrCode, 
   Camera, 
@@ -15,7 +18,9 @@ import {
   AlertTriangle,
   User,
   History,
-  Calendar
+  Calendar,
+  Send,
+  MessageSquare
 } from 'lucide-react'
 
 export default function GuardScanner() {
@@ -23,7 +28,16 @@ export default function GuardScanner() {
   const [lastScan, setLastScan] = useState<any>(null)
   const [todayAttendance, setTodayAttendance] = useState<any[]>([])
   const [todayPatrols, setTodayPatrols] = useState<any[]>([])
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([])
+  const [submittingLeave, setSubmittingLeave] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [leaveSuccess, setLeaveSuccess] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [formData, setFormData] = useState({
+    startDate: '',
+    endDate: '',
+    reason: ''
+  })
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -109,7 +123,55 @@ export default function GuardScanner() {
 
   useEffect(() => {
     fetchTodayData()
+    fetchLeaveRequests()
   }, [])
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await fetch('/api/leave-requests')
+      if (response.ok) {
+        const data = await response.json()
+        setLeaveRequests(data)
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error)
+    }
+  }
+
+  const handleSubmitLeave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmittingLeave(true)
+    setLeaveError(null)
+    setLeaveSuccess(null)
+
+    try {
+      const response = await fetch('/api/leave-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit leave request')
+      }
+
+      const newRequest = await response.json()
+      setLeaveRequests(prev => [newRequest, ...prev])
+      setLeaveSuccess('Leave request submitted successfully!')
+      setFormData({ startDate: '', endDate: '', reason: '' })
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setLeaveSuccess(null), 3000)
+    } catch (error: any) {
+      console.error('Error submitting leave request:', error)
+      setLeaveError(error.message || 'Failed to submit leave request')
+    } finally {
+      setSubmittingLeave(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
