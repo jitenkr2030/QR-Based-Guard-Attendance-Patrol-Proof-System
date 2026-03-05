@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Shield, 
   QrCode, 
@@ -19,8 +20,14 @@ import {
   FileText,
   Settings,
   LogOut,
-  User
+  User,
+  RefreshCw,
+  Activity
 } from 'lucide-react'
+import { useDashboardData } from '@/hooks/use-dashboard-data'
+import AttendanceTable from '@/components/attendance-table'
+import GuardManagement from '@/components/guard-management'
+import ReportGeneration from '@/components/report-generation'
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -187,6 +194,7 @@ function LandingPage() {
 }
 
 function Dashboard({ session }: { session: any }) {
+  const { stats, recentActivity, loading, error, refetch } = useDashboardData()
   const userRole = session.user.role
   const userName = session.user.name
 
@@ -200,6 +208,16 @@ function Dashboard({ session }: { session: any }) {
     }
   }
 
+  const getActivityIcon = (icon: string, color: string) => {
+    const iconClass = `h-4 w-4 text-${color}-500`
+    switch (icon) {
+      case 'check-circle': return <CheckCircle className={iconClass} />
+      case 'map-pin': return <MapPin className={iconClass} />
+      case 'calendar': return <Calendar className={iconClass} />
+      default: return <Activity className={iconClass} />
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -210,6 +228,10 @@ function Dashboard({ session }: { session: any }) {
               <h1 className="text-2xl font-bold text-gray-900">QR Guard System</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
                 <span className="font-medium">{userName}</span>
@@ -227,6 +249,15 @@ function Dashboard({ session }: { session: any }) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {error && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {userName}!</h2>
           <p className="text-gray-600">Here's what's happening with your security operations today.</p>
@@ -249,21 +280,25 @@ function Dashboard({ session }: { session: any }) {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">+2 from last month</p>
+                  <div className="text-2xl font-bold">{loading ? '...' : stats?.totalGuards || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {userRole === 'GUARD' ? 'Your profile' : 'Active guards'}
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Sites</CardTitle>
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">8</div>
-                  <p className="text-xs text-muted-foreground">All operational</p>
-                </CardContent>
-              </Card>
+              {userRole !== 'GUARD' && userRole !== 'CLIENT' && (
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Sites</CardTitle>
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{loading ? '...' : stats?.activeSites || 0}</div>
+                    <p className="text-xs text-muted-foreground">All operational</p>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -271,8 +306,11 @@ function Dashboard({ session }: { session: any }) {
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">18/24</div>
-                  <p className="text-xs text-muted-foreground">75% present</p>
+                  <div className="text-2xl font-bold">{loading ? '...' : stats?.todayAttendance || 0}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.lateCheckins && stats.lateCheckins > 0 ? 
+                      `${stats.lateCheckins} late` : 'On time'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -282,8 +320,11 @@ function Dashboard({ session }: { session: any }) {
                   <Clock className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">92%</div>
-                  <p className="text-xs text-muted-foreground">+5% from yesterday</p>
+                  <div className="text-2xl font-bold">{loading ? '...' : `${stats?.patrolCompletion || 0}%`}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats?.missedPatrols && stats.missedPatrols > 0 ? 
+                      `${stats.missedPatrols} missed` : 'On track'}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -295,21 +336,31 @@ function Dashboard({ session }: { session: any }) {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">John Doe checked in at Main Gate</span>
-                      <span className="text-xs text-gray-500 ml-auto">2 min ago</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <MapPin className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">Jane Smith completed patrol round</span>
-                      <span className="text-xs text-gray-500 ml-auto">15 min ago</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      <span className="text-sm">Mike Johnson late check-in</span>
-                      <span className="text-xs text-gray-500 ml-auto">1 hour ago</span>
-                    </div>
+                    {loading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <RefreshCw className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : recentActivity && recentActivity.length > 0 ? (
+                      recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-center space-x-3">
+                          {getActivityIcon(activity.icon, activity.color)}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{activity.title}</p>
+                            <p className="text-xs text-gray-500">{activity.description}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-medium">
+                              {new Date(activity.timestamp).toLocaleTimeString()}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(activity.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">No recent activity</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -320,19 +371,19 @@ function Dashboard({ session }: { session: any }) {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button className="h-20 flex-col">
+                    <Button className="h-20 flex-col" variant="outline">
                       <QrCode className="h-6 w-6 mb-2" />
                       Scan QR Code
                     </Button>
-                    <Button variant="outline" className="h-20 flex-col">
+                    <Button className="h-20 flex-col" variant="outline">
                       <Users className="h-6 w-6 mb-2" />
                       Manage Guards
                     </Button>
-                    <Button variant="outline" className="h-20 flex-col">
+                    <Button className="h-20 flex-col" variant="outline">
                       <MapPin className="h-6 w-6 mb-2" />
                       View Sites
                     </Button>
-                    <Button variant="outline" className="h-20 flex-col">
+                    <Button className="h-20 flex-col" variant="outline">
                       <FileText className="h-6 w-6 mb-2" />
                       Generate Report
                     </Button>
@@ -343,38 +394,7 @@ function Dashboard({ session }: { session: any }) {
           </TabsContent>
 
           <TabsContent value="attendance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance Management</CardTitle>
-                <CardDescription>View and manage guard attendance records</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-green-600">18</div>
-                        <p className="text-sm text-gray-600">Present Today</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-red-600">6</div>
-                        <p className="text-sm text-gray-600">Absent Today</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-yellow-600">3</div>
-                        <p className="text-sm text-gray-600">Late Check-ins</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <p className="text-gray-600">Detailed attendance tracking and management features.</p>
-                  <Button>View Detailed Attendance</Button>
-                </div>
-              </CardContent>
-            </Card>
+            <AttendanceTable />
           </TabsContent>
 
           <TabsContent value="patrols">
@@ -388,20 +408,20 @@ function Dashboard({ session }: { session: any }) {
                   <div className="grid md:grid-cols-3 gap-4">
                     <Card>
                       <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-blue-600">42</div>
-                        <p className="text-sm text-gray-600">Patrols Completed</p>
+                        <div className="text-2xl font-bold text-blue-600">{loading ? '...' : stats?.patrolCompletion || 0}%</div>
+                        <p className="text-sm text-gray-600">Completion Rate</p>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-orange-600">8</div>
+                        <div className="text-2xl font-bold text-orange-600">{loading ? '...' : stats?.missedPatrols || 0}</div>
                         <p className="text-sm text-gray-600">Missed Patrols</p>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardContent className="p-4">
-                        <div className="text-2xl font-bold text-green-600">92%</div>
-                        <p className="text-sm text-gray-600">Completion Rate</p>
+                        <div className="text-2xl font-bold text-green-600">Live</div>
+                        <p className="text-sm text-gray-600">Real-time Tracking</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -413,106 +433,11 @@ function Dashboard({ session }: { session: any }) {
           </TabsContent>
 
           <TabsContent value="guards">
-            <Card>
-              <CardHeader>
-                <CardTitle>Guard Management</CardTitle>
-                <CardDescription>Manage guard profiles and assignments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold">24</div>
-                          <p className="text-sm text-gray-600">Total Guards</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-green-600">20</div>
-                          <p className="text-sm text-gray-600">Active</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-gray-600">4</div>
-                          <p className="text-sm text-gray-600">On Leave</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    <div className="space-x-2">
-                      <Button>Add Guard</Button>
-                      <Button variant="outline">Manage Assignments</Button>
-                    </div>
-                  </div>
-                  <p className="text-gray-600">Complete guard workforce management system.</p>
-                </div>
-              </CardContent>
-            </Card>
+            <GuardManagement />
           </TabsContent>
 
           <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reports & Analytics</CardTitle>
-                <CardDescription>Generate and view operational reports</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <FileText className="h-8 w-8 text-blue-500 mb-2" />
-                        <h3 className="font-semibold">Daily Attendance</h3>
-                        <p className="text-sm text-gray-600">View daily attendance records</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <BarChart3 className="h-8 w-8 text-green-500 mb-2" />
-                        <h3 className="font-semibold">Guard Performance</h3>
-                        <p className="text-sm text-gray-600">Individual guard metrics</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <MapPin className="h-8 w-8 text-purple-500 mb-2" />
-                        <h3 className="font-semibold">Site Performance</h3>
-                        <p className="text-sm text-gray-600">Location-wise analytics</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <Calendar className="h-8 w-8 text-orange-500 mb-2" />
-                        <h3 className="font-semibold">Monthly Summary</h3>
-                        <p className="text-sm text-gray-600">Comprehensive monthly reports</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <Clock className="h-8 w-8 text-red-500 mb-2" />
-                        <h3 className="font-semibold">Patrol Activity</h3>
-                        <p className="text-sm text-gray-600">Patrol completion reports</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <FileText className="h-8 w-8 text-indigo-500 mb-2" />
-                        <h3 className="font-semibold">Service Summary</h3>
-                        <p className="text-sm text-gray-600">Complete service overview</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <Button>Generate Custom Report</Button>
-                    <Button variant="outline">Download PDF Reports</Button>
-                    <Button variant="outline">Schedule Reports</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ReportGeneration />
           </TabsContent>
         </Tabs>
       </main>
