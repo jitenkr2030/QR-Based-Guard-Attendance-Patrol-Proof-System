@@ -1,141 +1,264 @@
-# 🚀 Welcome to Z.ai Code Scaffold
+# QR-Based Guard Attendance & Patrol Proof System
 
-A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.
+A comprehensive digital workforce monitoring platform designed for security companies to track guard attendance and verify patrol activities using QR code scanning technology.
 
-## ✨ Technology Stack
+## 🎯 Features
 
-This scaffold provides a robust foundation built with:
+### Core Functionality
+- **QR-Based Guard Attendance** - Check-in/check-out with unique QR codes
+- **Patrol Verification** - Multiple QR checkpoints for patrol validation
+- **Real-time Monitoring** - Live dashboard for supervisors and admins
+- **Multi-Site Management** - Manage multiple client locations
+- **Role-Based Access** - Admin, Supervisor, Guard, and Client portals
+- **Automated Reporting** - Generate attendance and patrol reports
 
-### 🎯 Core Framework
-- **⚡ Next.js 16** - The React framework for production with App Router
-- **📘 TypeScript 5** - Type-safe JavaScript for better developer experience
-- **🎨 Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
-
-### 🧩 UI Components & Styling
-- **🧩 shadcn/ui** - High-quality, accessible components built on Radix UI
-- **🎯 Lucide React** - Beautiful & consistent icon library
-- **🌈 Framer Motion** - Production-ready motion library for React
-- **🎨 Next Themes** - Perfect dark mode in 2 lines of code
-
-### 📋 Forms & Validation
-- **🎣 React Hook Form** - Performant forms with easy validation
-- **✅ Zod** - TypeScript-first schema validation
-
-### 🔄 State Management & Data Fetching
-- **🐻 Zustand** - Simple, scalable state management
-- **🔄 TanStack Query** - Powerful data synchronization for React
-- **🌐 Fetch** - Promise-based HTTP request
-
-### 🗄️ Database & Backend
-- **🗄️ Prisma** - Next-generation TypeScript ORM
-- **🔐 NextAuth.js** - Complete open-source authentication solution
-
-### 🎨 Advanced UI Features
-- **📊 TanStack Table** - Headless UI for building tables and datagrids
-- **🖱️ DND Kit** - Modern drag and drop toolkit for React
-- **📊 Recharts** - Redefined chart library built with React and D3
-- **🖼️ Sharp** - High performance image processing
-
-### 🌍 Internationalization & Utilities
-- **🌍 Next Intl** - Internationalization library for Next.js
-- **📅 Date-fns** - Modern JavaScript date utility library
-- **🪝 ReactUse** - Collection of essential React hooks for modern development
-
-## 🎯 Why This Scaffold?
-
-- **🏎️ Fast Development** - Pre-configured tooling and best practices
-- **🎨 Beautiful UI** - Complete shadcn/ui component library with advanced interactions
-- **🔒 Type Safety** - Full TypeScript configuration with Zod validation
-- **📱 Responsive** - Mobile-first design principles with smooth animations
-- **🗄️ Database Ready** - Prisma ORM configured for rapid backend development
-- **🔐 Auth Included** - NextAuth.js for secure authentication flows
-- **📊 Data Visualization** - Charts, tables, and drag-and-drop functionality
-- **🌍 i18n Ready** - Multi-language support with Next Intl
-- **🚀 Production Ready** - Optimized build and deployment settings
-- **🤖 AI-Friendly** - Structured codebase perfect for AI assistance
+### User Roles
+- **Admin**: Full system access, user management, system configuration
+- **Supervisor**: Monitor assigned sites, guard performance, patrol completion
+- **Guard**: Mobile interface for QR scanning, attendance marking, patrol tracking
+- **Client**: View-only access to verify security services at their locations
 
 ## 🚀 Quick Start
 
-```bash
-# Install dependencies
-bun install
+### Prerequisites
+- Node.js 18+ 
+- Bun or npm package manager
+- SQLite (included)
 
-# Start development server
-bun run dev
+### Installation
 
-# Build for production
-bun run build
+1. **Clone and install dependencies**
+   ```bash
+   git clone <repository-url>
+   cd qr-guard-system
+   bun install
+   ```
 
-# Start production server
-bun start
-```
+2. **Set up the database**
+   ```bash
+   bun run db:push
+   bun run db:seed
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your application running.
+3. **Start the development server**
+   ```bash
+   bun run dev
+   ```
 
-## 🤖 Powered by Z.ai
+4. **Access the application**
+   - Open http://localhost:3000 in your browser
+   - Use the demo credentials below to login
 
-This scaffold is optimized for use with [Z.ai](https://chat.z.ai) - your AI assistant for:
+### Demo Credentials
 
-- **💻 Code Generation** - Generate components, pages, and features instantly
-- **🎨 UI Development** - Create beautiful interfaces with AI assistance  
-- **🔧 Bug Fixing** - Identify and resolve issues with intelligent suggestions
-- **📝 Documentation** - Auto-generate comprehensive documentation
-- **🚀 Optimization** - Performance improvements and best practices
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@guardsecurity.com | admin123 |
+| Client | client@company.com | client123 |
+| Supervisor | supervisor@guardsecurity.com | supervisor123 |
+| Guard | mike@guardsecurity.com | guard123 |
+| Guard | sarah@guardsecurity.com | guard123 |
+| Guard | tom@guardsecurity.com | guard123 |
 
-Ready to build something amazing? Start chatting with Z.ai at [chat.z.ai](https://chat.z.ai) and experience the future of AI-powered development!
+## 📱 How It Works
+
+### For Guards
+1. Login using assigned credentials
+2. Scan QR code at site entrance for check-in
+3. Scan patrol point QR codes during rounds
+4. Scan QR code again for check-out
+5. View attendance history and patrol completion
+
+### For Supervisors
+1. Monitor real-time guard attendance
+2. Track patrol completion across sites
+3. Identify late check-ins and missed patrols
+4. Generate reports for management review
+
+### For Clients
+1. Access view-only dashboard
+2. Verify guard presence at your locations
+3. Review daily security logs
+4. Download monthly service reports
+
+### For Admins
+1. Complete system management
+2. User and role management
+3. Site and QR code management
+4. System configuration and settings
+
+## 🏗️ Technical Architecture
+
+### Frontend
+- **Next.js 16** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **shadcn/ui** component library
+- **NextAuth.js** for authentication
+
+### Backend
+- **Next.js API Routes** for server-side logic
+- **Prisma ORM** with SQLite database
+- **bcryptjs** for password hashing
+- **QRCode** library for QR generation
+
+### Database Schema
+- **Users** with role-based profiles
+- **Sites** for client locations
+- **QR Codes** for attendance and patrol points
+- **Attendance Records** for check-in/out tracking
+- **Patrol Scans** for patrol verification
+- **Reports** for automated reporting
 
 ## 📁 Project Structure
 
 ```
 src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── hooks/              # Custom React hooks
-└── lib/                # Utility functions and configurations
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   │   ├── auth/          # Authentication endpoints
+│   │   ├── qrcodes/       # QR code management
+│   │   ├── scan/          # QR scanning logic
+│   │   └── sites/         # Site management
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Main dashboard
+├── components/            # React components
+│   ├── ui/               # shadcn/ui components
+│   ├── guard-scanner.tsx # Guard mobile interface
+│   └── providers.tsx     # Session provider
+├── lib/                  # Utility libraries
+│   ├── auth.ts           # NextAuth configuration
+│   ├── db.ts             # Prisma client
+│   └── utils.ts          # Helper functions
+└── types/                # TypeScript definitions
+    └── next-auth.d.ts    # Auth type extensions
 ```
 
-## 🎨 Available Features & Components
+## 🔧 Configuration
 
-This scaffold includes a comprehensive set of modern web development tools:
+### Environment Variables
+Create a `.env` file in the root directory:
 
-### 🧩 UI Components (shadcn/ui)
-- **Layout**: Card, Separator, Aspect Ratio, Resizable Panels
-- **Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Navigation**: Breadcrumb, Menubar, Navigation Menu, Pagination
-- **Overlay**: Dialog, Sheet, Popover, Tooltip, Hover Card
-- **Data Display**: Badge, Avatar, Calendar
+```env
+DATABASE_URL="file:./db/custom.db"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
+```
 
-### 📊 Advanced Data Features
-- **Tables**: Powerful data tables with sorting, filtering, pagination (TanStack Table)
-- **Charts**: Beautiful visualizations with Recharts
-- **Forms**: Type-safe forms with React Hook Form + Zod validation
+### Database Management
+```bash
+# Push schema changes
+bun run db:push
 
-### 🎨 Interactive Features
-- **Animations**: Smooth micro-interactions with Framer Motion
-- **Drag & Drop**: Modern drag-and-drop functionality with DND Kit
-- **Theme Switching**: Built-in dark/light mode support
+# Generate Prisma client
+bun run db:generate
 
-### 🔐 Backend Integration
-- **Authentication**: Ready-to-use auth flows with NextAuth.js
-- **Database**: Type-safe database operations with Prisma
-- **API Client**: HTTP requests with Fetch + TanStack Query
-- **State Management**: Simple and scalable with Zustand
+# Reset database
+bun run db:reset
 
-### 🌍 Production Features
-- **Internationalization**: Multi-language support with Next Intl
-- **Image Optimization**: Automatic image processing with Sharp
-- **Type Safety**: End-to-end TypeScript with Zod validation
-- **Essential Hooks**: 100+ useful React hooks with ReactUse for common patterns
+# Seed with sample data
+bun run db:seed
+```
 
-## 🤝 Get Started with Z.ai
+## 🎨 UI Components
 
-1. **Clone this scaffold** to jumpstart your project
-2. **Visit [chat.z.ai](https://chat.z.ai)** to access your AI coding assistant
-3. **Start building** with intelligent code generation and assistance
-4. **Deploy with confidence** using the production-ready setup
+The system uses a comprehensive set of shadcn/ui components:
+- Authentication forms
+- Data tables with sorting/filtering
+- QR code scanner interface
+- Dashboard widgets and charts
+- Modal dialogs and forms
+- Responsive navigation
+
+## 🔒 Security Features
+
+- **Password Hashing** - bcryptjs for secure password storage
+- **Role-Based Access Control** - Restrict access based on user roles
+- **Session Management** - Secure NextAuth.js sessions
+- **Input Validation** - Server-side validation for all inputs
+- **QR Code Security** - Unique, time-stamped QR codes
+
+## 📊 Reporting System
+
+### Available Reports
+- Daily attendance summaries
+- Guard performance metrics
+- Site-wise security logs
+- Patrol completion statistics
+- Monthly service summaries
+
+### Report Features
+- Real-time data aggregation
+- Export to PDF functionality
+- Custom date ranges
+- Client-ready formatting
+
+## 🚀 Deployment
+
+### Production Build
+```bash
+bun run build
+bun run start
+```
+
+### Environment Setup
+1. Set production environment variables
+2. Configure database connection
+3. Set up SSL certificates
+4. Configure domain and DNS
+
+## 🔄 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/[...nextauth]` - NextAuth.js handlers
+
+### QR Codes
+- `GET /api/qrcodes` - List QR codes
+- `POST /api/qrcodes` - Generate new QR code
+
+### Scanning
+- `POST /api/scan` - Process QR scan (attendance/patrol)
+
+### Sites
+- `GET /api/sites` - List sites (role-filtered)
+- `POST /api/sites` - Create new site
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
+
+## 🎯 Business Value
+
+### For Security Companies
+- Eliminate manual attendance registers
+- Provide verifiable service records
+- Improve operational efficiency
+- Strengthen client trust
+- Reduce administrative workload
+
+### For Clients
+- Transparent service verification
+- Real-time guard presence confirmation
+- Professional security reports
+- Improved accountability
 
 ---
 
-Built with ❤️ for the developer community. Supercharged by [Z.ai](https://chat.z.ai) 🚀
+**QR Guard System** - Transforming security workforce management with digital innovation.

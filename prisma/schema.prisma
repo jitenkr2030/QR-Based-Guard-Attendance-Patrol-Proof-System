@@ -13,20 +13,285 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User model with role-based access control
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String?
+  name      String
+  password  String
+  role      UserRole @default(GUARD)
+  phone     String?
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  guardProfile  GuardProfile?
+  supervisorProfile SupervisorProfile?
+  clientProfile  ClientProfile?
+  adminProfile   AdminProfile?
+
+  @@map("users")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// User roles
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  GUARD
+  CLIENT
+}
+
+// Guard specific profile
+model GuardProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  employeeId   String   @unique
+  department   String?
+  hireDate     DateTime?
+  salary       Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments  SiteAssignment[]
+  attendances  Attendance[]
+  patrols      PatrolScan[]
+  leaveRequests LeaveRequest[]
+
+  @@map("guard_profiles")
+}
+
+// Supervisor specific profile
+model SupervisorProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  employeeId   String   @unique
+  department   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  managedSites Site[]
+
+  @@map("supervisor_profiles")
+}
+
+// Client specific profile
+model ClientProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  companyName  String
+  contactPerson String?
+  billingAddress String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ownedSites   Site[]
+
+  @@map("client_profiles")
+}
+
+// Admin specific profile
+model AdminProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  employeeId   String   @unique
+  permissions  String   // JSON string of permission array
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_profiles")
+}
+
+// Site management
+model Site {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  description String?
+  isActive    Boolean  @default(true)
+  clientId    String
+  supervisorId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  client      ClientProfile  @relation(fields: [clientId], references: [id])
+  supervisor  SupervisorProfile? @relation(fields: [supervisorId], references: [id])
+  qrCodes     QRCode[]
+  assignments SiteAssignment[]
+  attendances Attendance[]
+  patrols     PatrolScan[]
+
+  @@map("sites")
+}
+
+// QR Code management
+model QRCode {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  type        QRCodeType
+  name        String
+  description String?
+  siteId      String
+  location    String? // Specific location within site
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  site        Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+  patrols     PatrolScan[]
+
+  @@map("qr_codes")
+}
+
+// QR Code types
+enum QRCodeType {
+  ATTENDANCE
+  PATROL_POINT
+}
+
+// Guard site assignments
+model SiteAssignment {
+  id         String   @id @default(cuid())
+  guardId    String
+  siteId     String
+  startDate  DateTime
+  endDate    DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  guard      GuardProfile @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  site       Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([guardId, siteId, startDate])
+  @@map("site_assignments")
+}
+
+// Attendance records
+model Attendance {
+  id          String         @id @default(cuid())
+  guardId     String
+  siteId      String
+  qrCodeId    String
+  type        AttendanceType
+  timestamp   DateTime       @default(now())
+  location    String?
+  ipAddress   String?
+  userAgent   String?
+  isVerified  Boolean        @default(true)
+  notes       String?
+  createdAt   DateTime       @default(now())
+
+  // Relations
+  guard       GuardProfile @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  qrCode      QRCode       @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+// Attendance types
+enum AttendanceType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+// Patrol scans
+model PatrolScan {
+  id          String   @id @default(cuid())
+  guardId     String
+  siteId      String
+  qrCodeId    String
+  timestamp   DateTime @default(now())
+  sequence    Int?     // Patrol sequence number
+  location    String?
+  ipAddress   String?
+  userAgent   String?
+  isVerified  Boolean  @default(true)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  guard       GuardProfile @relation(fields: [guardId], references: [id], onDelete: Cascade)
+  site        Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  qrCode      QRCode       @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@map("patrol_scans")
+}
+
+// Leave requests
+model LeaveRequest {
+  id          String        @id @default(cuid())
+  guardId     String
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      LeaveStatus   @default(PENDING)
+  approvedBy  String?
+  approvedAt  DateTime?
+  rejectReason String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  guard       GuardProfile  @relation(fields: [guardId], references: [id], onDelete: Cascade)
+
+  @@map("leave_requests")
+}
+
+// Leave status
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// System reports
+model Report {
+  id          String     @id @default(cuid())
+  title       String
+  type        ReportType
+  description String?
+  data        String     // JSON data
+  fileUrl     String?    // Generated PDF file URL
+  generatedBy String
+  generatedAt DateTime   @default(now())
+  periodStart DateTime
+  periodEnd   DateTime
+
+  @@map("reports")
+}
+
+// Report types
+enum ReportType {
+  DAILY_ATTENDANCE
+  MONTHLY_ATTENDANCE
+  GUARD_PERFORMANCE
+  SITE_PERFORMANCE
+  PATROL_ACTIVITY
+  SERVICE_SUMMARY
+}
+
+// System settings
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
 }
