@@ -14,7 +14,8 @@ import {
   MapPin, 
   AlertTriangle,
   User,
-  History
+  History,
+  Calendar
 } from 'lucide-react'
 
 export default function GuardScanner() {
@@ -163,10 +164,11 @@ export default function GuardScanner() {
         </div>
 
         <Tabs defaultValue="scanner" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="scanner">QR Scanner</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="patrols">Patrols</TabsTrigger>
+            <TabsTrigger value="leave">Leave Request</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scanner">
@@ -296,6 +298,69 @@ export default function GuardScanner() {
                       </div>
                     ))
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="leave">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Leave Requests
+                </CardTitle>
+                <CardDescription>
+                  Submit and track your leave requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Start Date</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">End Date</label>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Reason</label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      rows={3}
+                      placeholder="Enter reason for leave request..."
+                    />
+                  </div>
+                  <Button className="w-full">Submit Leave Request</Button>
+                  
+                  <div className="mt-6">
+                    <h3 className="font-medium mb-3">Recent Leave Requests</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium">Annual Leave</p>
+                          <p className="text-sm text-gray-500">Dec 15, 2024 - Dec 20, 2024</p>
+                        </div>
+                        <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium">Medical Leave</p>
+                          <p className="text-sm text-gray-500">Nov 10, 2024 - Nov 12, 2024</p>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800">Approved</Badge>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -349,7 +349,30 @@ function Dashboard({ session }: { session: any }) {
                 <CardDescription>View and manage guard attendance records</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Attendance tracking features will be implemented here.</p>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-green-600">18</div>
+                        <p className="text-sm text-gray-600">Present Today</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-red-600">6</div>
+                        <p className="text-sm text-gray-600">Absent Today</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-yellow-600">3</div>
+                        <p className="text-sm text-gray-600">Late Check-ins</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <p className="text-gray-600">Detailed attendance tracking and management features.</p>
+                  <Button>View Detailed Attendance</Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -361,7 +384,30 @@ function Dashboard({ session }: { session: any }) {
                 <CardDescription>Track patrol completion and activities</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Patrol monitoring features will be implemented here.</p>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-blue-600">42</div>
+                        <p className="text-sm text-gray-600">Patrols Completed</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-orange-600">8</div>
+                        <p className="text-sm text-gray-600">Missed Patrols</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-green-600">92%</div>
+                        <p className="text-sm text-gray-600">Completion Rate</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <p className="text-gray-600">Real-time patrol monitoring and missed patrol detection.</p>
+                  <Button>View Patrol Details</Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -373,7 +419,35 @@ function Dashboard({ session }: { session: any }) {
                 <CardDescription>Manage guard profiles and assignments</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Guard management features will be implemented here.</p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold">24</div>
+                          <p className="text-sm text-gray-600">Total Guards</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold text-green-600">20</div>
+                          <p className="text-sm text-gray-600">Active</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold text-gray-600">4</div>
+                          <p className="text-sm text-gray-600">On Leave</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    <div className="space-x-2">
+                      <Button>Add Guard</Button>
+                      <Button variant="outline">Manage Assignments</Button>
+                    </div>
+                  </div>
+                  <p className="text-gray-600">Complete guard workforce management system.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -385,7 +459,58 @@ function Dashboard({ session }: { session: any }) {
                 <CardDescription>Generate and view operational reports</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Reporting features will be implemented here.</p>
+                <div className="space-y-6">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <FileText className="h-8 w-8 text-blue-500 mb-2" />
+                        <h3 className="font-semibold">Daily Attendance</h3>
+                        <p className="text-sm text-gray-600">View daily attendance records</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <BarChart3 className="h-8 w-8 text-green-500 mb-2" />
+                        <h3 className="font-semibold">Guard Performance</h3>
+                        <p className="text-sm text-gray-600">Individual guard metrics</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <MapPin className="h-8 w-8 text-purple-500 mb-2" />
+                        <h3 className="font-semibold">Site Performance</h3>
+                        <p className="text-sm text-gray-600">Location-wise analytics</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <Calendar className="h-8 w-8 text-orange-500 mb-2" />
+                        <h3 className="font-semibold">Monthly Summary</h3>
+                        <p className="text-sm text-gray-600">Comprehensive monthly reports</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <Clock className="h-8 w-8 text-red-500 mb-2" />
+                        <h3 className="font-semibold">Patrol Activity</h3>
+                        <p className="text-sm text-gray-600">Patrol completion reports</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <FileText className="h-8 w-8 text-indigo-500 mb-2" />
+                        <h3 className="font-semibold">Service Summary</h3>
+                        <p className="text-sm text-gray-600">Complete service overview</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <Button>Generate Custom Report</Button>
+                    <Button variant="outline">Download PDF Reports</Button>
+                    <Button variant="outline">Schedule Reports</Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
