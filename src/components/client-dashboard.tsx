@@ -5,8 +5,8 @@ import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { 
   Building, 
@@ -14,17 +14,26 @@ import {
   CheckCircle, 
   Clock, 
   MapPin, 
-  Calendar,
-  FileText,
-  Download,
-  Eye,
-  Bell,
-  Shield,
   Activity,
   TrendingUp,
-  AlertCircle
+  AlertTriangle,
+  Calendar,
+  FileText,
+  Bell
 } from 'lucide-react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
+
+interface SiteMetrics {
+  id: string
+  name: string
+  address: string
+  totalGuards: number
+  presentGuards: number
+  attendanceRate: number
+  patrolCompletion: number
+  lastActivity: string
+  issues: string[]
+}
 
 interface ServiceVerification {
   siteName: string
@@ -57,12 +66,7 @@ export default function ClientDashboard() {
   const [serviceData, setServiceData] = useState<ServiceVerification[]>([])
   const [monthlyReport, setMonthlyReport] = useState<any>(null)
 
-  useEffect(() => {
-    if (session?.user?.role === 'CLIENT') {
-      fetchClientData()
-    }
-  }, [session])
-
+  // Fetch client-specific data
   const fetchClientData = async () => {
     try {
       // Simulate fetching client-specific data
@@ -142,6 +146,12 @@ export default function ClientDashboard() {
     }
   }
 
+  useEffect(() => {
+    if (session?.user?.role === 'CLIENT') {
+      fetchClientData()
+    }
+  }, [session])
+
   const getServiceLevelColor = (level: number) => {
     if (level >= 95) return 'text-green-600'
     if (level >= 90) return 'text-blue-600'
@@ -156,34 +166,13 @@ export default function ClientDashboard() {
     return <Badge className="bg-red-100 text-red-800">Poor</Badge>
   }
 
-  const downloadReport = (format: 'pdf' | 'excel' = 'pdf') => {
-    // Simulate report download
-    const reportData = {
-      clientName: session?.user?.name || 'Client',
-      reportType: 'Monthly Service Verification',
-      period: monthlyReport?.period,
-      data: monthlyReport,
-      generatedAt: new Date().toISOString()
-    }
-
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
-      type: 'application/json' 
-    })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `service-verification-report-${monthlyReport?.period}.${format}`
-    a.click()
-    window.URL.revokeObjectURL(url)
-  }
-
   if (session?.user?.role !== 'CLIENT') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
-              <Shield className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+              <Building className="h-12 w-12 text-purple-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Client Portal</h2>
               <p className="text-gray-600">This page is only accessible to clients.</p>
             </div>
@@ -201,7 +190,7 @@ export default function ClientDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <Shield className="h-5 w-5 text-purple-600" />
+                <Building className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Client Portal</h1>
@@ -345,9 +334,7 @@ export default function ClientDashboard() {
                         <CardDescription>{site.address}</CardDescription>
                       </div>
                       <div className="text-right">
-                        {getServiceLevelBadge(
-                          (site.attendanceRate + site.patrolCompletion) / 2
-                        )}
+                        {getServiceLevelBadge(site.monthlySummary.serviceLevel)}
                       </div>
                     </div>
                   </CardHeader>
@@ -484,12 +471,12 @@ export default function ClientDashboard() {
                   </div>
                   
                   <div className="flex justify-end space-x-2 mt-6">
-                    <Button variant="outline" onClick={() => downloadReport('pdf')}>
-                      <Download className="h-4 w-4 mr-2" />
+                    <Button variant="outline">
+                      <FileText className="h-4 w-4 mr-2" />
                       Download PDF
                     </Button>
-                    <Button variant="outline" onClick={() => downloadReport('excel')}>
-                      <Download className="h-4 w-4 mr-2" />
+                    <Button variant="outline">
+                      <FileText className="h-4 w-4 mr-2" />
                       Download Excel
                     </Button>
                   </div>
@@ -514,10 +501,10 @@ export default function ClientDashboard() {
                         </div>
                         <div className="flex space-x-2">
                           <Button variant="outline" size="sm">
-                            <Eye className="h-3 w-3" />
+                            <FileText className="h-3 w-3" />
                           </Button>
                           <Button variant="outline" size="sm">
-                            <Download className="h-3 w-3" />
+                            <FileText className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -533,7 +520,7 @@ export default function ClientDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <AlertCircle className="h-5 w-5 mr-2" />
+                    <CheckCircle className="h-5 w-5 mr-2" />
                     Service Verification
                   </CardTitle>
                   <CardDescription>
@@ -610,7 +597,7 @@ export default function ClientDashboard() {
 
                     <div className="mt-6">
                       <Button className="w-full">
-                        <Eye className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-4 w-4 mr-2" />
                         View Detailed Verification Report
                       </Button>
                     </div>

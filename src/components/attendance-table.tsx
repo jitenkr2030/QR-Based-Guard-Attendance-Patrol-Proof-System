@@ -1,81 +1,99 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Calendar, Search, Download, Filter, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
-import { useAttendance } from '@/hooks/use-dashboard-data'
-import { format } from 'date-fns'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { 
+  Calendar, 
+  Search, 
+  Filter, 
+  Download, 
+  Eye,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  RefreshCw
+} from 'lucide-react'
 
 interface AttendanceRecord {
   id: string
-  guardName: string
-  guardId: string
-  siteName: string
+  guard: {
+    user: {
+      name: string
+      email: string
+    }
+    employeeId: string
+  }
+  site: {
+    name: string
+    address: string
+  }
   type: 'CHECK_IN' | 'CHECK_OUT'
   timestamp: string
   location: string
-  status?: 'on-time' | 'late'
+  isVerified: boolean
+}
+
+interface Site {
+  id: string
+  name: string
+  address: string
+}
+
+interface Guard {
+  id: string
+  user: {
+    name: string
+    email: string
+  }
+  employeeId: string
 }
 
 export default function AttendanceTable() {
-  const { attendance, loading, error, fetchAttendance } = useAttendance()
-  const [filteredAttendance, setFilteredAttendance] = useState<AttendanceRecord[]>([])
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [sites, setSites] = useState<Site[]>([])
+  const [guards, setGuards] = useState<Guard[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedSite, setSelectedSite] = useState('')
   const [selectedGuard, setSelectedGuard] = useState('')
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
-  const [sites, setSites] = useState<any[]>([])
-  const [guards, setGuards] = useState<any[]>([])
+  const [dateRange, setDateRange] = useState({
+    start: '',
+    end: ''
+  })
 
-  useEffect(() => {
-    // Fetch initial data
-    fetchAttendanceData()
-    
-    // Fetch sites and guards for filters
-    fetchSitesAndGuards()
-  }, [])
-
-  useEffect(() => {
-    // Filter attendance based on search and filters
-    let filtered = attendance
-    
-    if (searchTerm) {
-      filtered = filtered.filter(record => 
-        record.guardName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.siteName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.location.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-    
-    if (selectedSite) {
-      filtered = filtered.filter(record => record.siteName === selectedSite)
-    }
-    
-    if (selectedGuard) {
-      filtered = filtered.filter(record => record.guardName === selectedGuard)
-    }
-    
-    setFilteredAttendance(filtered)
-  }, [attendance, searchTerm, selectedSite, selectedGuard])
-
+  // Fetch attendance data
   const fetchAttendanceData = async () => {
-    const today = new Date()
-    const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-    
-    await fetchAttendance(
-      undefined, // siteId
-      undefined, // guardId
-      lastWeek.toISOString().split('T')[0],
-      today.toISOString().split('T')[0]
-    )
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const today = new Date()
+      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+      
+      const response = await fetch(`/api/attendance?startDate=${lastWeek.toISOString()}&endDate=${today.toISOString()}`)
+      if (!response.ok) throw new Error('Failed to fetch attendance')
+      
+      const data = await response.json()
+      setAttendance(data)
+    } catch (error) {
+      console.error('Error fetching attendance:', error)
+      setError('Failed to load attendance data')
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // Fetch sites and guards for filters
   const fetchSitesAndGuards = async () => {
     try {
       const [sitesResponse, guardsResponse] = await Promise.all([
@@ -97,75 +115,124 @@ export default function AttendanceTable() {
     }
   }
 
+  // Handle filter
   const handleFilter = async () => {
-    await fetchAttendance(
-      selectedSite || undefined,
-      selectedGuard || undefined,
-      dateRange.start,
-      dateRange.end
-    )
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const params = new URLSearchParams()
+      if (dateRange.start) params.append('startDate', dateRange.start)
+      if (dateRange.end) params.append('endDate', dateRange.end)
+      if (selectedSite) params.append('siteId', selectedSite)
+      if (selectedGuard) params.append('guardId', selectedGuard)
+      if (searchTerm) params.append('search', searchTerm)
+      
+      const response = await fetch(`/api/attendance?${params}`)
+      if (!response.ok) throw new Error('Failed to filter attendance')
+      
+      const data = await response.json()
+      setAttendance(data)
+    } catch (error) {
+      console.error('Error filtering attendance:', error)
+      setError('Failed to filter attendance')
+    } finally {
+      setLoading(false)
+    }
   }
 
+  // Export to CSV
   const exportToCSV = () => {
-    const headers = ['Date', 'Guard Name', 'Site', 'Type', 'Location', 'Time', 'Status']
-    const csvData = filteredAttendance.map(record => [
+    const headers = ['Date', 'Guard Name', 'Employee ID', 'Site', 'Type', 'Location', 'Verified']
+    const csvData = attendance.map(record => [
       new Date(record.timestamp).toLocaleDateString(),
-      record.guardName,
-      record.siteName,
+      record.guard.user.name,
+      record.guard.employeeId,
+      record.site.name,
       record.type,
       record.location,
-      new Date(record.timestamp).toLocaleTimeString(),
-      record.status || 'N/A'
+      record.isVerified ? 'Yes' : 'No'
     ])
     
-    const csvContent = [headers, ...csvData]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n')
-    
+    const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `attendance_report_${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `attendance-report-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
   }
 
-  const getStatusBadge = (record: AttendanceRecord) => {
-    if (record.type === 'CHECK_OUT') return null
+  useEffect(() => {
+    // Fetch initial data
+    fetchAttendanceData()
     
-    const hour = new Date(record.timestamp).getHours()
-    const isLate = hour > 9 || (hour === 9 && new Date(record.timestamp).getMinutes() > 0)
-    
-    if (isLate) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Late</Badge>
+    // Fetch sites and guards for filters
+    fetchSitesAndGuards()
+  }, [])
+
+  useEffect(() => {
+    if (dateRange.start || dateRange.end || selectedSite || selectedGuard || searchTerm) {
+      handleFilter()
     }
-    return <Badge className="bg-green-100 text-green-800">On Time</Badge>
+  }, [dateRange.start, dateRange.end, selectedSite, selectedGuard, searchTerm])
+
+  const getStatusBadge = (type: string, isVerified: boolean) => {
+    if (type === 'CHECK_IN') {
+      return <Badge className="bg-green-100 text-green-800">Check In</Badge>
+    } else {
+      return isVerified 
+        ? <Badge className="bg-blue-100 text-blue-800">Check Out</Badge>
+        : <Badge className="bg-red-100 text-red-800">Unverified</Badge>
+      }
+    }
   }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'CHECK_IN':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'CHECK_OUT':
-        return <XCircle className="h-4 w-4 text-blue-500" />
-      default:
-        return <AlertTriangle className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  if (loading && attendance.length === 0) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </CardContent>
-      </Card>
-    )
-  }
+  const filteredAttendance = attendance.filter(record => {
+    const matchesSearch = 
+      record.guard.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.guard.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.site.name.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesSite = !selectedSite || record.site.id === selectedSite
+    const matchesGuard = !selectedGuard || record.guard.id === selectedGuard
+    const matchesDateRange = 
+      (!dateRange.start || new Date(record.timestamp) >= new Date(dateRange.start)) &&
+      (!dateRange.end || new Date(record.timestamp) <= new Date(dateRange.end))
+    
+    return matchesSearch && matchesSite && matchesGuard && matchesDateRange
+  })
 
   return (
     <div className="space-y-6">
+      {/* Header with Actions */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                Attendance Records
+              </CardTitle>
+              <CardDescription>
+                Track and manage guard attendance across all sites
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" onClick={exportToCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button variant="outline" onClick={fetchAttendanceData} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -175,21 +242,27 @@ export default function AttendanceTable() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="start-date">Start Date</Label>
                 <Input
-                  id="search"
-                  placeholder="Search guards, sites..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  id="start-date"
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="end-date">End Date</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                 />
               </div>
             </div>
-            
             <div>
               <Label htmlFor="site">Site</Label>
               <Select value={selectedSite} onValueChange={setSelectedSite}>
@@ -199,14 +272,13 @@ export default function AttendanceTable() {
                 <SelectContent>
                   <SelectItem value="">All sites</SelectItem>
                   {sites.map((site) => (
-                    <SelectItem key={site.id} value={site.name}>
+                    <SelectItem key={site.id} value={site.id}>
                       {site.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div>
               <Label htmlFor="guard">Guard</Label>
               <Select value={selectedGuard} onValueChange={setSelectedGuard}>
@@ -216,43 +288,26 @@ export default function AttendanceTable() {
                 <SelectContent>
                   <SelectItem value="">All guards</SelectItem>
                   {guards.map((guard) => (
-                    <SelectItem key={guard.id} value={guard.name}>
-                      {guard.name}
+                    <SelectItem key={guard.id} value={guard.id}>
+                      {guard.user.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
             <div>
-              <Label htmlFor="start-date">Start Date</Label>
-              <Input
-                id="start-date"
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              />
+              <Label htmlFor="search">Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="search"
+                  placeholder="Search by name, employee ID, or site..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="end-date">End Date</Label>
-              <Input
-                id="end-date"
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end mt-4 space-x-2">
-            <Button variant="outline" onClick={handleFilter}>
-              Apply Filters
-            </Button>
-            <Button onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -260,24 +315,23 @@ export default function AttendanceTable() {
       {/* Attendance Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Attendance Records</CardTitle>
-              <CardDescription>
-                Showing {filteredAttendance.length} of {attendance.length} records
-              </CardDescription>
-            </div>
-            <Button variant="outline" size="sm" onClick={fetchAttendanceData}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
+          <CardTitle>Attendance Records</CardTitle>
+          <CardDescription>
+            {filteredAttendance.length} record{filteredAttendance.length !== 1 ? 's' : ''} found
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {error ? (
-            <div className="text-center py-8 text-red-600">
-              Error loading attendance data: {error}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
+          ) : error ? (
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {error}
+              </AlertDescription>
+            </Alert>
           ) : filteredAttendance.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No attendance records found
@@ -287,12 +341,12 @@ export default function AttendanceTable() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Date & Time</TableHead>
                     <TableHead>Guard</TableHead>
+                    <TableHead>Employee ID</TableHead>
                     <TableHead>Site</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Time</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -300,24 +354,52 @@ export default function AttendanceTable() {
                   {filteredAttendance.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>
-                        {format(new Date(record.timestamp), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {record.guardName}
-                      </TableCell>
-                      <TableCell>{record.siteName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {getTypeIcon(record.type)}
-                          <span>{record.type === 'CHECK_IN' ? 'Check In' : 'Check Out'}</span>
+                        <div className="text-sm">
+                          <div className="font-medium">
+                            {new Date(record.timestamp).toLocaleDateString()}
+                          </div>
+                          <div className="text-gray-500">
+                            {new Date(record.timestamp).toLocaleTimeString()}
+                          </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-medium">
+                              {record.guard.user.name.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium">{record.guard.user.name}</div>
+                            <div className="text-sm text-gray-500">{record.guard.employeeId}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{record.guard.employeeId}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div className="font-medium">{record.site.name}</div>
+                          <div className="text-gray-500">{record.site.address}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(record.type, record.isVerified)}
                       </TableCell>
                       <TableCell>{record.location}</TableCell>
                       <TableCell>
-                        {format(new Date(record.timestamp), 'HH:mm:ss')}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(record)}
+                        <div className="flex items-center space-x-2">
+                          {record.isVerified ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-500" />
+                          )}
+                          <span className="text-sm">
+                            {record.isVerified ? 'Verified' : 'Unverified'}
+                          </span>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

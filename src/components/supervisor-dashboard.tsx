@@ -5,25 +5,21 @@ import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Users, 
+  Building, 
   MapPin, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  AlertTriangle,
+  Activity, 
   TrendingUp,
-  TrendingDown,
-  Eye,
-  MessageSquare,
-  Calendar,
-  BarChart3,
-  Activity,
+  AlertTriangle,
+  Clock,
+  CheckCircle,
+  XCircle,
   RefreshCw,
+  Eye,
   Bell
 } from 'lucide-react'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
@@ -37,9 +33,10 @@ interface GuardPerformance {
   punctualityRate: number
   totalShifts: number
   presentDays: number
-  lateDays: number
   totalPatrols: number
   missedPatrols: number
+  lastActivity: string
+  status: 'active' | 'inactive'
 }
 
 interface SiteMetrics {
@@ -59,7 +56,87 @@ export default function SupervisorDashboard() {
   const { stats, recentActivity, loading, error, refetch } = useDashboardData()
   const [guardPerformance, setGuardPerformance] = useState<GuardPerformance[]>([])
   const [siteMetrics, setSiteMetrics] = useState<SiteMetrics[]>([])
-  const [alerts, setAlerts] = useState<any[]>([])
+
+  // Fetch supervisor-specific data
+  const fetchSupervisorData = async () => {
+    try {
+      // Simulate fetching guard performance data
+      const mockGuardPerformance: GuardPerformance[] = [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          employeeId: 'GUARD001',
+          attendanceRate: 95.2,
+          punctualityRate: 88.5,
+          totalShifts: 30,
+          presentDays: 28,
+          totalPatrols: 120,
+          missedPatrols: 5,
+          lastActivity: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+          status: 'active'
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          employeeId: 'GUARD002',
+          attendanceRate: 92.8,
+          punctualityRate: 95.2,
+          totalShifts: 30,
+          presentDays: 27,
+          totalPatrols: 118,
+          missedPatrols: 3,
+          lastActivity: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          status: 'active'
+        },
+        {
+          id: '3',
+          name: 'Mike Johnson',
+          email: 'mike@example.com',
+          employeeId: 'GUARD003',
+          attendanceRate: 88.1,
+          punctualityRate: 82.3,
+          totalShifts: 30,
+          presentDays: 26,
+          totalPatrols: 115,
+          missedPatrols: 8,
+          lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          status: 'active'
+        }
+      ]
+      setGuardPerformance(mockGuardPerformance)
+
+      // Simulate fetching site metrics
+      const mockSiteMetrics: SiteMetrics[] = [
+        {
+          id: '1',
+          name: 'Main Office',
+          address: '123 Business Ave, Downtown',
+          totalGuards: 8,
+          presentGuards: 7,
+          attendanceRate: 87.5,
+          patrolCompletion: 92,
+          lastActivity: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+          issues: ['Late check-in: 1 guard']
+        },
+        {
+          id: '2',
+          name: 'Warehouse',
+          address: '456 Industrial Park',
+          totalGuards: 6,
+          presentGuards: 5,
+          attendanceRate: 83.3,
+          patrolCompletion: 88,
+          lastActivity: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+          issues: ['Missed patrol: 2 points']
+        }
+      ]
+      setSiteMetrics(mockSiteMetrics)
+    } catch (error) {
+      console.error('Error fetching supervisor data:', error)
+    }
+  }
 
   useEffect(() => {
     if (session?.user?.role === 'SUPERVISOR') {
@@ -67,97 +144,28 @@ export default function SupervisorDashboard() {
     }
   }, [session])
 
-  const fetchSupervisorData = async () => {
-    try {
-      // Fetch guard performance
-      const performanceResponse = await fetch('/api/reports?reportType=GUARD_PERFORMANCE&startDate=2024-01-01&endDate=2024-12-31')
-      if (performanceResponse.ok) {
-        const performanceData = await performanceResponse.json()
-        setGuardPerformance(performanceData.data || [])
-      }
-
-      // Fetch site metrics
-      const sitesResponse = await fetch('/api/sites')
-      if (sitesResponse.ok) {
-        const sitesData = await sitesResponse.json()
-        const metrics = sitesData.map((site: any) => ({
-          id: site.id,
-          name: site.name,
-          address: site.address,
-          totalGuards: site._count?.assignments || 0,
-          presentGuards: Math.floor((site._count?.assignments || 0) * 0.8), // Simulated
-          attendanceRate: 85, // Simulated
-          patrolCompletion: 78, // Simulated
-          lastActivity: new Date().toISOString(),
-          issues: [] // Simulated
-        }))
-        setSiteMetrics(metrics)
-      }
-
-      // Simulate alerts
-      setAlerts([
-        {
-          id: '1',
-          type: 'late_checkin',
-          message: 'John Doe was late for check-in at Main Office',
-          severity: 'warning',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          type: 'missed_patrol',
-          message: '2 missed patrols detected at Warehouse Facility',
-          severity: 'error',
-          timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          type: 'low_attendance',
-          message: 'Low attendance rate (75%) at ABC Corporate Office',
-          severity: 'warning',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        }
-      ])
-    } catch (error) {
-      console.error('Error fetching supervisor data:', error)
-    }
-  }
-
   const getPerformanceColor = (rate: number) => {
     if (rate >= 90) return 'text-green-600'
-    if (rate >= 75) return 'text-yellow-600'
+    if (rate >= 80) return 'text-blue-600'
+    if (rate >= 70) return 'text-yellow-600'
     return 'text-red-600'
   }
 
-  const getPerformanceIcon = (rate: number) => {
-    if (rate >= 90) return <TrendingUp className="h-4 w-4 text-green-500" />
-    if (rate >= 75) return <Activity className="h-4 w-4 text-yellow-500" />
-    return <TrendingDown className="h-4 w-4 text-red-500" />
+  const getPerformanceBadge = (rate: number) => {
+    if (rate >= 95) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+    if (rate >= 85) return <Badge className="bg-blue-100 text-blue-800">Good</Badge>
+    if (rate >= 75) return <Badge className="bg-yellow-100 text-yellow-800">Fair</Badge>
+    return <Badge className="bg-red-100 text-red-800">Poor</Badge>
   }
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'late_checkin':
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case 'missed_patrol':
-        return <XCircle className="h-4 w-4 text-red-500" />
-      case 'low_attendance':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>
+      case 'inactive':
+        return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
       default:
-        return <Bell className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const getAlertColor = (severity: string) => {
-    switch (severity) {
-      case 'error':
-        return 'border-red-200 bg-red-50'
-      case 'warning':
-        return 'border-yellow-200 bg-yellow-50'
-      case 'info':
-        return 'border-blue-200 bg-blue-50'
-      default:
-        return 'border-gray-200 bg-gray-50'
+        return <Badge className="bg-red-100 text-red-800">Unknown</Badge>
     }
   }
 
@@ -167,8 +175,8 @@ export default function SupervisorDashboard() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+              <Users className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Supervisor Portal</h2>
               <p className="text-gray-600">This page is only accessible to supervisors.</p>
             </div>
           </CardContent>
@@ -189,17 +197,17 @@ export default function SupervisorDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Supervisor Dashboard</h1>
-                <p className="text-sm text-gray-500">Monitor your assigned sites and guards</p>
+                <p className="text-sm text-gray-500">Monitor and manage your assigned sites</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <Activity className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               <Button size="sm">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Contact Admin
+                <Bell className="h-4 w-4 mr-2" />
+                Notifications
               </Button>
             </div>
           </div>
@@ -207,86 +215,10 @@ export default function SupervisorDashboard() {
       </div>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Critical Alerts */}
-        {alerts.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Critical Alerts</h2>
-            <div className="space-y-3">
-              {alerts.slice(0, 3).map((alert) => (
-                <Alert key={alert.id} className={getAlertColor(alert.severity)}>
-                  <div className="flex items-center space-x-2">
-                    {getAlertIcon(alert.type)}
-                    <AlertDescription className="flex-1">
-                      <div className="font-medium">{alert.message}</div>
-                      <div className="text-xs opacity-75">
-                        {new Date(alert.timestamp).toLocaleString()}
-                      </div>
-                    </AlertDescription>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </Alert>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Overview Stats */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Guards on Duty</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{loading ? '...' : stats?.totalGuards || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.todayAttendance || 0} present today
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{loading ? '...' : '85%'}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.lateCheckins && stats.lateCheckins > 0 ? 
-                  `${stats.lateCheckins} late today` : 'All on time'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Patrol Completion</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{loading ? '...' : `${stats?.patrolCompletion || 0}%`}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.missedPatrols && stats.missedPatrols > 0 ? 
-                  `${stats.missedPatrols} missed` : 'On track'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Sites</CardTitle>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{siteMetrics.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Under your supervision
-              </p>
-            </CardContent>
-          </Card>
+        {/* Dashboard Stats */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Operations Overview</h2>
+          <p className="text-gray-600">Real-time monitoring of your security operations</p>
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -294,85 +226,112 @@ export default function SupervisorDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="guards">Guards</TabsTrigger>
             <TabsTrigger value="sites">Sites</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            <TabsTrigger value="alerts">Alerts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Guard Performance Summary */}
+            {/* Quick Stats */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="h-5 w-5 mr-2" />
-                    Guard Performance
-                  </CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Guards</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {guardPerformance.slice(0, 5).map((guard) => (
-                      <div key={guard.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{guard.name}</div>
-                          <div className="text-sm text-gray-500">{guard.employeeId}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center space-x-2">
-                            {getPerformanceIcon(parseInt(guard.attendanceRate))}
-                            <span className={`text-sm font-medium ${getPerformanceColor(parseInt(guard.attendanceRate))}`}>
-                              {guard.attendanceRate}%
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {guard.presentDays}/{guard.totalShifts} days
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="text-2xl font-bold">{guardPerformance.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {guardPerformance.filter(g => g.status === 'active').length} active
+                  </p>
                 </CardContent>
               </Card>
 
-              {/* Site Status */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-2" />
-                    Site Status
-                  </CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Managed Sites</CardTitle>
+                  <Building className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {siteMetrics.map((site) => (
-                      <div key={site.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{site.name}</div>
-                          <div className="text-sm text-gray-500">{site.address}</div>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Users className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs">{site.presentGuards}/{site.totalGuards} guards</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-medium ${getPerformanceColor(site.attendanceRate)}`}>
-                            {site.attendanceRate}%
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {site.patrolCompletion}% patrols
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="text-2xl font-bold">{siteMetrics.length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {siteMetrics.filter(s => s.issues.length === 0).length} normal
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg Attendance</CardTitle>
+                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {(guardPerformance.reduce((sum, g) => sum + g.attendanceRate, 0) / guardPerformance.length).toFixed(1)}%
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Last 30 days
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Issues</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {siteMetrics.reduce((sum, s) => sum + s.issues.length, 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Requiring attention
+                  </p>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Latest security activities at your locations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity?.slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          {activity.type === 'attendance' ? (
+                            <CheckCircle className="h-4 w-4 text-blue-600" />
+                          ) : (
+                            <MapPin className="h-4 w-4 text-blue-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{activity.title}</p>
+                          <p className="text-sm text-gray-500">{activity.description}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          {new Date(activity.timestamp).toLocaleTimeString()}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(activity.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="guards">
             <Card>
               <CardHeader>
-                <CardTitle>Guard Performance Details</CardTitle>
-                <CardDescription>Detailed performance metrics for all guards</CardDescription>
+                <CardTitle>Guard Performance</CardTitle>
+                <CardDescription>Monitor and manage your security guards</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -386,6 +345,7 @@ export default function SupervisorDashboard() {
                         <TableHead>Shifts</TableHead>
                         <TableHead>Patrols</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Last Activity</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -393,7 +353,7 @@ export default function SupervisorDashboard() {
                         <TableRow key={guard.id}>
                           <TableCell>
                             <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                                 <span className="text-xs font-medium">
                                   {guard.name.split(' ').map(n => n[0]).join('')}
                                 </span>
@@ -409,46 +369,39 @@ export default function SupervisorDashboard() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {getPerformanceIcon(guard.attendanceRate)}
-                              <span className={`text-sm font-medium ${getPerformanceColor(guard.attendanceRate)}`}>
+                              <span className={`font-medium ${getPerformanceColor(guard.attendanceRate)}`}>
                                 {guard.attendanceRate}%
                               </span>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {guard.presentDays}/{guard.totalShifts}
+                              {getPerformanceBadge(guard.attendanceRate)}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              {getPerformanceIcon(guard.punctualityRate)}
-                              <span className={`text-sm font-medium ${getPerformanceColor(guard.punctualityRate)}`}>
+                              <span className={`font-medium ${getPerformanceColor(guard.punctualityRate)}`}>
                                 {guard.punctualityRate}%
                               </span>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {guard.lateDays} late
+                              {getPerformanceBadge(guard.punctualityRate)}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div>{guard.totalShifts} shifts</div>
-                              <div className="text-gray-500">{guard.totalPatrols} patrols</div>
+                              <div>{guard.presentDays}/{guard.totalShifts}</div>
+                              <div className="text-gray-500">shifts</div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div>{guard.missedPatrols} missed</div>
-                              <div className="text-gray-500">{guard.totalPatrols - guard.missedPatrols} completed</div>
+                              <div>{guard.totalPatrols - guard.missedPatrols}/{guard.totalPatrols}</div>
+                              <div className="text-gray-500">completed</div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            {guard.attendanceRate >= 90 ? (
-                              <Badge className="bg-green-100 text-green-800">Excellent</Badge>
-                            ) : guard.attendanceRate >= 75 ? (
-                              <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-800">Needs Attention</Badge>
-                            )}
+                            {getStatusBadge(guard.status)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {new Date(guard.lastActivity).toLocaleString()}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -460,113 +413,124 @@ export default function SupervisorDashboard() {
           </TabsContent>
 
           <TabsContent value="sites">
-            <Card>
-              <CardHeader>
-                <CardTitle>Site Management</CardTitle>
-                <CardDescription>Monitor and manage your assigned sites</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {siteMetrics.map((site) => (
-                    <Card key={site.id}>
-                      <CardHeader>
-                        <CardTitle className="text-lg">{site.name}</CardTitle>
+            <div className="space-y-6">
+              {siteMetrics.map((site, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center">
+                          <Building className="h-5 w-5 mr-2" />
+                          {site.name}
+                        </CardTitle>
                         <CardDescription>{site.address}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Guards Present</span>
-                            <span className="font-medium">{site.presentGuards}/{site.totalGuards}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Attendance Rate</span>
-                            <span className={`font-medium ${getPerformanceColor(site.attendanceRate)}`}>
-                              {site.attendanceRate}%
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Patrol Completion</span>
-                            <span className={`font-medium ${getPerformanceColor(site.patrolCompletion)}`}>
-                              {site.patrolCompletion}%
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Last Activity</span>
-                            <span className="text-sm">
-                              {new Date(site.lastActivity).toLocaleString()}
-                            </span>
-                          </div>
-                          {site.issues.length > 0 && (
-                            <div className="mt-2">
-                              <Badge className="bg-red-100 text-red-800">
-                                {site.issues.length} issue{site.issues.length !== 1 ? 's' : ''}
-                              </Badge>
-                            </div>
-                          )}
-                          <div className="flex space-x-2 mt-4">
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Details
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                              Contact
-                            </Button>
-                          </div>
+                      </div>
+                      <div className="text-right">
+                        {site.issues.length > 0 ? (
+                          <Badge className="bg-red-100 text-red-800">
+                            {site.issues.length} issue{site.issues.length !== 1 ? 's' : ''}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-800">
+                            Normal
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{site.presentGuards}/{site.totalGuards}</div>
+                        <p className="text-sm text-gray-600">Guards Present</p>
+                        <Progress value={(site.presentGuards / site.totalGuards) * 100} className="mt-2" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{site.attendanceRate}%</div>
+                        <p className="text-sm text-gray-600">Attendance Rate</p>
+                        <Progress value={site.attendanceRate} className="mt-2" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{site.patrolCompletion}%</div>
+                        <p className="text-sm text-gray-600">Patrol Completion</p>
+                        <Progress value={site.patrolCompletion} className="mt-2" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">
+                          {new Date(site.lastActivity).toLocaleTimeString()}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                        <p className="text-sm text-gray-600">Last Activity</p>
+                      </div>
+                    </div>
+
+                    {site.issues.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Issues</h4>
+                        <div className="space-y-2">
+                          {site.issues.map((issue, issueIndex) => (
+                            <div key={issueIndex} className="flex items-center space-x-2 p-2 bg-red-50 rounded">
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                              <span className="text-sm text-red-800">{issue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="h-5 w-5 mr-2" />
-                  Performance Reports
-                </CardTitle>
-                <CardDescription>Generate and view detailed performance reports</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <Calendar className="h-8 w-8 text-blue-500 mb-4" />
-                      <h3 className="font-semibold">Daily Report</h3>
-                      <p className="text-sm text-gray-600 mb-4">Today's attendance and patrol summary</p>
-                      <Button variant="outline" className="w-full">
-                        Generate
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <BarChart3 className="h-8 w-8 text-green-500 mb-4" />
-                      <h3 className="font-semibold">Weekly Report</h3>
-                      <p className="text-sm text-gray-600 mb-4">7-day performance analysis</p>
-                      <Button variant="outline" className="w-full">
-                        Generate
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <TrendingUp className="h-8 w-8 text-purple-500 mb-4" />
-                      <h3 className="font-semibold">Monthly Report</h3>
-                      <p className="text-sm text-gray-600 mb-4">Comprehensive monthly metrics</p>
-                      <Button variant="outline" className="w-full">
-                        Generate
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="alerts">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2" />
+                    Active Alerts
+                  </CardTitle>
+                  <CardDescription>Issues requiring your attention</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {siteMetrics.filter(s => s.issues.length > 0).map((site, index) => (
+                      <Card key={index} className="border-l-4 border-l-red-500">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium">{site.name}</h4>
+                            <Badge className="bg-red-100 text-red-800">
+                              {site.issues.length} issue{site.issues.length !== 1 ? 's' : ''}
+                            </Badge>
+                          </div>
+                          <div className="space-y-2">
+                            {site.issues.map((issue, issueIndex) => (
+                              <div key={issueIndex} className="flex items-center space-x-2 text-sm">
+                                <AlertTriangle className="h-4 w-4 text-red-500" />
+                                <span>{issue}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-3">
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-3 w-3 mr-1" />
+                              View Details
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {siteMetrics.filter(s => s.issues.length === 0).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900">All Systems Normal</h3>
+                        <p className="text-gray-600">No active alerts at this time</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
